@@ -1,5 +1,12 @@
 import os
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -75,6 +82,7 @@ DATABASES = {
         "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
     },
+
     "sqlite": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": str(BASE_DIR / "db.sqlite3"),
