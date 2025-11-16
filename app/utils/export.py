@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import tempfile
 from datetime import datetime
 from decimal import Decimal
 from openpyxl import Workbook
@@ -9,7 +11,14 @@ from reportlab.pdfbase import pdfmetrics
 
 from .. import models
 
-EXPORT_DIR = Path(__file__).resolve().parents[3] / "assets" / "exports"
+# Export directory strategy:
+# 1) Prefer environment variable EXPORT_ROOT (absolute path)
+# 2) Fallback to OS temp directory under a namespaced folder
+_env_root = os.environ.get("EXPORT_ROOT")
+if _env_root and _env_root.strip():
+    EXPORT_DIR = Path(_env_root).expanduser().resolve()
+else:
+    EXPORT_DIR = Path(tempfile.gettempdir()) / "govt-exports"
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 

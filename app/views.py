@@ -11,6 +11,8 @@ from rest_framework import permissions, status, views, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.http import FileResponse
+import os
 
 from . import models, serializers
 from .decorators import has_permission, has_any_permission, role_required, any_role_required
@@ -24,6 +26,7 @@ from .utils.export import (
     export_bank_wise_pdf,
     export_contractor_wise_pdf,
     export_transaction_register_pdf,
+    EXPORT_DIR,
 )
 from .utils.backup import create_backup, restore_backup
 
@@ -120,12 +123,16 @@ class BankAccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def export(self, request):
         file_path = export_bank_accounts_excel()
-        return Response({"file": file_path})
+        fname = os.path.basename(file_path)
+        dl = request.build_absolute_uri(f"/api/download/{fname}")
+        return Response({"file": file_path, "filename": fname, "download_url": dl})
 
     @action(detail=True, methods=["get"], url_path="export-pdf")
     def export_pdf(self, request, pk=None):
         file_path = export_bank_account_pdf(int(pk))
-        return Response({"file": file_path})
+        fname = os.path.basename(file_path)
+        dl = request.build_absolute_uri(f"/api/download/{fname}")
+        return Response({"file": file_path, "filename": fname, "download_url": dl})
 
     @action(detail=False, methods=["post"], url_path="bulk-delete")
     def bulk_delete(self, request):
@@ -182,12 +189,16 @@ class ContractorViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def export(self, request):
         file_path = export_contractors_excel()
-        return Response({"file": file_path})
+        fname = os.path.basename(file_path)
+        dl = request.build_absolute_uri(f"/api/download/{fname}")
+        return Response({"file": file_path, "filename": fname, "download_url": dl})
 
     @action(detail=True, methods=["get"], url_path="export-pdf")
     def export_pdf(self, request, pk=None):
         file_path = export_contractor_pdf(int(pk))
-        return Response({"file": file_path})
+        fname = os.path.basename(file_path)
+        dl = request.build_absolute_uri(f"/api/download/{fname}")
+        return Response({"file": file_path, "filename": fname, "download_url": dl})
 
     @action(detail=False, methods=["post"], url_path="bulk-delete")
     def bulk_delete(self, request):
@@ -398,8 +409,12 @@ class ReportsView(views.APIView):
                 },
             )
 
+        fname = os.path.basename(file_path)
+        dl = request.build_absolute_uri(f"/api/download/{fname}")
         return Response({
             "file": file_path,
+            "filename": fname,
+            "download_url": dl,
             "type": report_type,
             "format": fmt,
             "start": start,
@@ -449,5 +464,22 @@ class AccessDeniedView(views.APIView):
     
     def get(self, request):
         return render(request, 'app/access_denied.html')
+
+
+class DownloadExportView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, filename: str):
+        safe_name = os.path.basename(filename or "")
+        if not safe_name:
+            return Response({"detail": "Invalid filename"}, status=status.HTTP_400_BAD_REQUEST)
+        path = (EXPORT_DIR / safe_name)
+        if not path.exists():
+            return Response({"detail": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            f = open(path, "rb")
+            return FileResponse(f, as_attachment=True, filename=safe_name)
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 

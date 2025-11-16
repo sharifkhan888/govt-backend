@@ -22,6 +22,7 @@ urlpatterns = [
     path("backup/", views.BackupView.as_view(), name="backup"),
     path("settings/image-path/", views.SettingsImagePathView.as_view(), name="settings_image_path"),
     path("access-denied/", views.AccessDeniedView.as_view(), name="access_denied"),
+    path("download/<str:filename>", views.DownloadExportView.as_view(), name="download_export"),
     path("rbac-test/", rbac_examples.rbac_test_page, name="rbac_test"),
     path("api/rbac-example/", rbac_examples.RBACExampleView.as_view(), name="rbac_example"),
     path("api/rbac-multi/", rbac_examples.MultiPermissionExampleView.as_view(), name="rbac_multi"),
